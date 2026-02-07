@@ -49,8 +49,8 @@ Add the dependency to `Cargo.toml`.
 version = "0.1"
 ~~~~
 
-1. Create a hardward specific I²C driver interface and delay function  and a Delay object
-2. Create an BMP38x struct with the I²C interface and a delay function as parameters.  
+1. Create a hardward specific I²C driver interface and a Delay object
+2. Create an BMP38x struct with the I²C interface and a delay object as parameters
 3. Initialize the BMP38x instance
 4. Create a new Bmp3Configuration using either the handy const builder or initial the struct's properties as required
 *    then call set_bmp3_configuration(new_bmp3Configuration)
