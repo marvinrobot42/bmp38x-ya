@@ -602,6 +602,56 @@ where
         
     }
 
+    /// fifo set watermark
+    pub async fn fifo_set_watermark_frames(&mut self, frames: u16) -> Result<(), Error<E>> {
+        let length_bytes = self.get_fifo_frames_to_bytes(frames);
+        if (length_bytes > 0) {
+            let length: [u8; 2] = length_bytes.to_le_bytes();
+            self.write_command([BMP3_REG_FIFO_WM, length[0], length[1]]).await?;
+
+        } else {
+            return Err(Error::CommandError);
+        }
+        Ok(())
+    }
+
+    fn get_fifo_frames_to_bytes(&self, num_frames: u16) -> u16 {
+        let mut wm_length: u16 = 0;
+        if ((num_frames == 0) || (num_frames > 73))  {
+            wm_length = 0;
+
+        } else {
+            if (self.fifo_config.fifo_config_1.get_fifo_temp_enable() && (self.fifo_config.fifo_config_1.get_fifo_press_enable())) {
+                wm_length = num_frames * 7 ;  // 7 bytes per frame
+            } else if ( (self.fifo_config.fifo_config_1.get_fifo_temp_enable()) || 
+                            (self.fifo_config.fifo_config_1.get_fifo_press_enable()) ) {
+                wm_length = num_frames * 4;  // 4 bytes per frame
+            }
+            return wm_length;
+        }
+
+        return wm_length;
+    }
+
+    pub fn get_fifo_watermark_in_frames(&mut self) -> Result<u16, Error<E>> {
+        let mut result_buf: [u8; 2] = [0; 2];
+        self.read_register(BMP3_REG_FIFO_WM, &mut result_buf).await?;
+        let length:u16 = u16::from_le_bytes(result_buf);
+        let mut wm_frames : u16 = 0;
+        if length < 4 {
+            return Ok(0);
+        } else {
+            if (self.fifo_config.fifo_config_1.get_fifo_temp_enable() && (self.fifo_config.fifo_config_1.get_fifo_press_enable())) {
+                wm_frames = length / 7 ;  // 7 bytes per frame
+            } else if ( (self.fifo_config.fifo_config_1.get_fifo_temp_enable()) || 
+                            (self.fifo_config.fifo_config_1.get_fifo_press_enable()) ) {
+                wm_frames = length / 4;  // 4 bytes per frame
+            }
+        }
+
+        return (Ok(wm_frames));
+    }
+
     /// flush fifo buffer
     pub async fn fifo_flush(&mut self) -> Result<(), Error<E>> {
         debug!("in fifo_flush");
@@ -731,122 +781,6 @@ where
 
     }
 
-    /*
-    
-    //---------------------------------
-    
 
-    /// read relative humidity in percent
-    pub async fn read_relative_humidity(&mut self) -> Result<f32, Error<E>> {
-        debug!("in read_relative_humidity()");
-        self.delayer.delay_ms(20).await;  // in case user called this again too quickly
-        let command_buffer: [u8; 1] = [Si7021_READ_RH_NO_HOLD]; 
-        self.i2c.write(self.address, &command_buffer).await
-            .map_err(Error::I2c)?;
-        self.delayer.delay_ms(25).await;
-        debug!("did i2c write, next is read");
-        let mut result_buf: [u8; 3] = [0; 3];
-        self.i2c.read(self.address, &mut result_buf).await
-            .map_err(Error::I2c)?;
-        
-        let humidity_u16 : u16 = u16::from_be_bytes( [result_buf[0], result_buf[1] ]);
-        // scale it
-        let mut humidity: f32 = ( humidity_u16 as f32 * 125.0 / 65536.0 ) - 6.0;
-        
-        // clamp value to => 0 and <= 100
-        #[allow(unused_parens)]
-        if (humidity.is_sign_negative() ) {
-            humidity = 0.0;
-        }
-        #[allow(unused_parens)]
-        if (humidity > 100.0) {
-            humidity = 100.0
-        }
-
-        Ok(humidity)
-        
-
-    }
-
-
-    /// read temperatue in degrees C
-    pub async fn read_temperature(&mut self) -> Result<f32, Error<E>> {
-        debug!("in read_temperature()");
-        let command_buffer: [u8; 1] = [Si7021_READ_TEMP_NO_HOLD]; 
-        self.i2c.write(self.address, &command_buffer).await
-                .map_err(Error::I2c)?;
-        self.delayer.delay_ms(20).await;
-        debug!("did i2c write, next is read");
-        let mut result_buf: [u8; 3] = [0; 3];
-        self.i2c.read(self.address, &mut result_buf).await
-                .map_err(Error::I2c)?;
-        
-        let temperature_u16 : u16 = u16::from_be_bytes( [result_buf[0], result_buf[1] ]);
-        // scale it
-        let temperature: f32 = ( temperature_u16 as f32 * 175.72 / 65536.0 ) - 46.85;
-
-        Ok(temperature)
-    }
-
-    /// read measurements (temperature and humidity as a struct)
-    pub async fn read_measurements(&mut self) -> Result<Measurements, Error<E>> {
-        debug!("in read_measurements()");
-        let humidity = self.read_relative_humidity().await?;
-        //self.delayer.delay_ms(5);
-        let mut result_buf: [u8; 2] = [0; 2];
-        self.read_register(Si7021_READ_TEMP_AFTER_PREVIOUS_RH, &mut result_buf).await?;
-        let temperature_u16 : u16 = u16::from_be_bytes( [result_buf[0], result_buf[1] ]);
-        // scale it
-        let temperature: f32 = ( temperature_u16 as f32 * 175.72 / 65536.0 ) - 46.85;
-
-        let measurements: Measurements = Measurements {
-            relative_humidity_percent: humidity,
-            temperature_c: temperature,
-        };
-        Ok(measurements)
-    }  
-  
-    /// heater control enable/disable
-    pub async fn heater_control(&mut self, enable: bool) -> Result<(), Error<E>> {
-        debug!("in heater_control({})", enable);
-        let mut result_buf: [u8; 1] = [0; 1];
-        self.read_register(Si7021_READ_RH_T_USER_REG_1, &mut result_buf).await?;
-        let mut write_value = result_buf[0];
-        if enable {
-            write_value = write_value | (1 << 2);
-        } else {
-            write_value = write_value & !(1 << 2);
-        }
-        self.write_command([Si7021_WRITE_RH_T_USER_REG_1, write_value]).await?;
-
-        Ok(())
-    }
-
-    /// is heater enabled
-    pub async fn is_heater_enabled(&mut self) -> Result<bool, Error<E>> {
-        debug!("in is_heater_enabled()");
-        let mut result_buf: [u8; 1] = [0; 1];
-        self.read_register(Si7021_READ_RH_T_USER_REG_1, &mut result_buf).await?;
-        let read_value = result_buf[0];
-        #[allow(unused_parens)]
-        if ((read_value & 0x04) != 0x00)  {
-            Ok(true)
-        } else {
-            Ok(false)
-        }
-    }
-
-    /// set heater power level
-    pub async fn set_heater_level(&mut self, level: u8) -> Result<(), Error<E>> {
-        debug!("in set_heater_level ( {} )", level);
-        #[allow(unused_parens)]
-        if (level > 0x0f) {
-            return Err(Error::OutOfRange(level));
-        }
-        self.write_command([Si7021_WRITE_HEATER_CONTROL, level]).await?;
-        Ok(())
-    }
-
-    */
 
 }

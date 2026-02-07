@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/marvinrobot42/bmp38x-ya)
 [![Documentation](https://docs.rs/si7021-t-rh/badge.svg)](https://docs.rs/si7021-t-rh)
 
-## A Rust crate for Bosch Sensortec BMP38x and BMP390 air pressure sensor  (-ya = Yet Another crate)
+## A Rust crate for Bosch Sensortec BMP38x and BMP390 air pressure sensor  (-ya = Yet Another)
 
 
 
