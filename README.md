@@ -52,12 +52,12 @@ version = "0.1"
 1. Create a hardward specific I²C driver interface and delay function  and a Delay object
 2. Create an BMP38x struct with the I²C interface and a delay function as parameters.  
 3. Initialize the BMP38x instance
-4.a Create a new Bmp3Configuration using either the handy const builder or initial the struct's properties as required
-4.b call set_bmp3_configuration(new_bmp3Configuration)
+4. Create a new Bmp3Configuration using either the handy const builder or initial the struct's properties as required
+*    then call set_bmp3_configuration(new_bmp3Configuration)
 1. Optional:  create a new InterruptPinControl instance and set its properties as required and call set_interrupt_pin_config fn
 2. Optional:  create a new Fifo_Config instance and set its properties as required call set_fifo_config
-7.a call get_status() and if (status.get_temp_ready() && status.get_press_ready())
-7.b then call ither read_,easurements or read_measurements_with_altitude fn
+3. call get_status() and if (status.get_temp_ready() && status.get_press_ready())
+*    then call ither read_,easurements or read_measurements_with_altitude fn
  
 
 
