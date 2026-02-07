@@ -11,7 +11,7 @@ log = { version = "0.4", default-features = false }
 env_logger = "0.11"
 linux-embedded-hal = "0.4.0"
 # rppal = "0.17.1"
-si7021-t-rh = "0.1"
+bmp38x-ya = "0.1"
 
 anyhow = "1.0.75"
 

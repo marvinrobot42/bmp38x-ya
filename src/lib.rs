@@ -4,7 +4,7 @@
 
 //#![feature(inherent_associated_types)]
 pub mod error;
-use core::result;
+
 
 use crate::data::{Bmp3Configuration, ControlFrameEnum, FifoConfig1, FifoConfig2, SensorFrameEnum, TandPtype};
 use crate::error::Error;
@@ -33,7 +33,7 @@ use embedded_hal::{i2c::I2c, delay::DelayNs};
 use embedded_hal_async::{i2c::I2c as AsyncI2c, delay::DelayNs as AsyncDelayNs};
 
 use log::{debug, info};
-use libm::{powf, truncf};
+use libm::{pow, truncf};
 
 const STANDARD_SEA_LEVEL_AIR_PRESSURE: f64 = 101325.0;  // Pa
 
@@ -487,7 +487,8 @@ where
          
         let exponent = -9.80665 * 0.028964 * altitude_m / (8.31432 * (temperature + 273.15));
         let base: f64 = 2.71828175f64;
-        let air_press_at_sealevel = (air_pressure / 100.0) / (base.powf(exponent)) * 100.00; // kind-a silly to /100.0 and * 100.0 again
+        let air_press_at_sealevel = (air_pressure / 100.0) / pow(base, exponent) * 100.00;
+         // kind-a silly to /100.0 and * 100.0 again, just more reabable
         air_press_at_sealevel
     }
     

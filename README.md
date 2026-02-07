@@ -1,15 +1,15 @@
-# Si7021-T-RH &emsp; 
-[![crates.io](https://img.shields.io/crates/v/si7021-t-rh)](https://crates.io/crates/si7021-t-rh)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/marvinrobot42/si7021-t-rh)
+# BMP38x-ya &emsp; 
+[![crates.io](https://img.shields.io/crates/v/bmp38x-ya)](https://crates.io/crates/bmp38x-ya)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/marvinrobot42/bmp38x-ya)
 [![Documentation](https://docs.rs/si7021-t-rh/badge.svg)](https://docs.rs/si7021-t-rh)
 
-## A Rust crate for Bosch Sensortec BMP38x and BMP390 air pressure sensor
+## A Rust crate for Bosch Sensortec BMP38x and BMP390 air pressure sensor  (-ya = Yet Another crate)
 
 
 
-fix <https://github.com/marvinrobot42/si7021-t-rh.git>
+fix <https://github.com/marvinrobot42/bmp38x-ya.git>
 
-[Si7021]: https://www.silabs.com/sensors/humidity/si7006-13-20-21-34/device.si7021-a20-gm?tab=specs
+[BMP384]: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp384/
 
 The  Bosch Sensortec BMP 384 (388) and 390 air pressure and temperature sensor with I2C interface.
 
@@ -48,15 +48,16 @@ Add the dependency to `Cargo.toml`.
 [dependencies.bmp38x-ya]
 version = "0.1"
 ~~~~
-FIX BELOW ******************************************
 
-1. Create a hardward specific I²C driver interface and delay function
-2. Create an Si7021 struct with the I²C interface and a delay function as parameters.  
-3. Initialize the Si7021 instance
-4.a Read relative humidity
-4.b Read temperature or
-5. Call read_measurements() fn which return both relative humdity and temperature faster than
-  call the seperate methods due to Si70xx "Read Temperature Value from Previous RH Measurement function" 
+1. Create a hardward specific I²C driver interface and delay function  and a Delay object
+2. Create an BMP38x struct with the I²C interface and a delay function as parameters.  
+3. Initialize the BMP38x instance
+4.a Create a new Bmp3Configuration using either the handy const builder or initial the struct's properties as required
+4.b call set_bmp3_configuration(new_bmp3Configuration)
+1. Optional:  create a new InterruptPinControl instance and set its properties as required and call set_interrupt_pin_config fn
+2. Optional:  create a new Fifo_Config instance and set its properties as required call set_fifo_config
+7.a call get_status() and if (status.get_temp_ready() && status.get_press_ready())
+7.b then call ither read_,easurements or read_measurements_with_altitude fn
  
 
 
@@ -66,7 +67,7 @@ A more complete example is in the repository examples path
 ~~~~rust
 
 use anyhow::Result;  // add dependency for this
-use si7021_t_rh::Si7021;
+use bmp38x_ya::{BMP38x, constants::DeviceAddress, data::{Bmp3Configuration, PowerMode, SensorFrameEnum}};
 use log::{info, error};
 
 ...
@@ -85,13 +86,35 @@ fn main() -> Result<()> {
   let i2c_bus = I2cDriver::new(i2c, sda, scl, &config)?;
 
   let mut delay: Delay = Default::default();   // your hardware delay from use ...
-  let mut my_si7021 = Si7021::new(i2c_bus, delay);
-  my_si7021.init_device().unwrap();
+  let mut sensor = BMP38x::new(i2c_dev,DeviceAddress::Secondary as u8, &mut delay);  // note the secondary I2C address
+  sensor.init_device().unwrap();
+  info!("BMP38x init_device done");
+  let new_config = const {
+        Bmp3Configuration::builder()
+            .power_mode(PowerMode::Normal)  //  *** very important to get measurements
+            .temperature_enable(true)
+            .pressure_enable(true)
+            .over_sampling_temp(Over_Sampling::ULTRA_LOW_POWER) // ultra_low ok
+            .over_sampling_press(Over_Sampling::HIGH_RESOLUTION)// standard ok
+            .iir_filter_coef(FilterCoef::COEF_15) // CORF_15 ok
+            .output_data_rate(Odr::ODR_12P5)  // ODR_50 ok,  ODR_12P5 for slower rate testing fifo operation
+            .build()
+    };
+    sensor.set_bmp3_configuration(new_config).unwrap();
+    let config = sensor.get_bmp3_configuration().unwrap();  // optional just to see that set config worked
+    info!("new Bmp3Configuration = {:?}", config);
+
   FreeRtos::delay_ms(250);  // or your sleep function here
 
   loop {
-    // the read_measurements() method is a little faster (-30 msec) than reading humidity and temperature separately
-    log::info!("Si70xx measurements are {:#?}", my_si7021.read_measurements().unwrap());
+    let status = sensor.get_status().unwrap();
+    info!(" bmp38x status is  {:?}", status);
+    if (status.get_temp_ready() && status.get_press_ready()) {
+      let sensor_measurements = sensor.read_measurements_with_altitude(383.5).unwrap();
+      info!(" sensor measurements = {:?}", sensor_measurements);
+    } else {
+            log::info!("  bmp38x sensor data not ready!");
+    }
     FreeRtos::delay_ms(10000);
   }
 
@@ -99,7 +122,7 @@ fn main() -> Result<()> {
     
 ~~~~
 
-### For async set si7021-t-rh dependency features = ["async"] and Si7021::new method requires async I2C and delay 
+### For async set bmp38x-ya dependency features = ["async"] and Bmp38x::new method requires async I2C and delay 
 ###    parameters.  Default features is sync (blocking)
 
 
