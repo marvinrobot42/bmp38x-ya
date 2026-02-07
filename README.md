@@ -13,7 +13,7 @@ fix <https://github.com/marvinrobot42/bmp38x-ya.git>
 
 The  Bosch Sensortec BMP 384 (388) and 390 air pressure and temperature sensor with I2C interface.
 
-All I2C API functions are implemented. 
+Most I2C API functions are implemented. 
 
 ### Features
 

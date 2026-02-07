@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["fordauthor42@gmail.com"]
 repository = "https://github.com/marvinrobot42/bmp38x-ya.git"
-description = "BMP38x driver (384, 388)"
+description = "BMP38x driver (384, 388, 390)"
 documentation = "https://docs.rs/bmp38x-ya"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
