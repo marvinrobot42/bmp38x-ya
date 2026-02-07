@@ -139,7 +139,7 @@ fn main() -> Result<()> {
     let fifo_config = sensor.get_fifo_config().unwrap();  // read it back to see that change worked
     info!(" new fifo config is {:?}", fifo_config);
 
-    sensor.fifo_set_watermark_frames(10).unwrap();  // used in WM interrupt when configurated
+    sensor.fifo_set_watermark_frames(10).unwrap();  // used in WM interrupt when configured
     let wm_frames = sensor.get_fifo_watermark_in_frames().unwrap();
     info!(" watermark in frames is {}", wm_frames);
 
