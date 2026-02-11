@@ -18,14 +18,15 @@ Most I2C API functions are implemented.
 ### Features
 
 - uses embedded-hal version 1.0.x
-- async support included (see examples folder in repository for embassy-async ESP32-C6 example)
+- no_std embedded compatible
+- async support included as a feature, default is sync or blocking
 - designed for embedded use (ESP32-C3, -C6 and -S3 and Raspberry Pi)
 - ESP32 RISC V and Raspberry Pi examples included
 - most BMP384 IO functions implemented
 - configurable interrupt pin function
-- FIFO functions with configuration
-- async functions involving I2C
-- no_std embedded compatible
+- FIFO functions with configuration and easier "frame" based reads
+- includes sealevel equivalent air pressure calculation when altitude is provided 
+
 
   
 
@@ -33,10 +34,15 @@ Most I2C API functions are implemented.
 
 Developed using Sparkfun BMP384 (QWIIC) model: https://www.sparkfun.com/sparkfun-pressure-sensor-bmp384-qwiic.html
 
+It is recommended to enable both temperature and pressure measurements so that the air pressure
+can be accurate compensated (as it requires current temperature).  This is a BMP3xx compensation algorthim design, not this driver.
+
 
 ### Recent version history
 
   - 0.1.0  Initial release
+  - 0.1.1  Fixed docs link
+  - 0.1.2  Updated docs
 
 
 ## Usage
@@ -57,7 +63,7 @@ version = "0.1"
 1. Optional:  create a new InterruptPinControl instance and set its properties as required and call set_interrupt_pin_config fn
 2. Optional:  create a new Fifo_Config instance and set its properties as required call set_fifo_config
 3. call get_status() and if (status.get_temp_ready() && status.get_press_ready())
-*    then call ither read_,easurements or read_measurements_with_altitude fn
+*    then call ither read_measurements or read_measurements_with_altitude fn
  
 
 
@@ -110,7 +116,8 @@ fn main() -> Result<()> {
     let status = sensor.get_status().unwrap();
     info!(" bmp38x status is  {:?}", status);
     if (status.get_temp_ready() && status.get_press_ready()) {
-      let sensor_measurements = sensor.read_measurements_with_altitude(383.5).unwrap();
+      let sensor_measurements = sensor.read_measurements_with_altitude(383.5).unwrap();  // using 383.5 m of altitude for sealevel equivalent pressure
+      // alternative call sensor.read_measurements().unwrape; if sealevel pressure not needed
       info!(" sensor measurements = {:?}", sensor_measurements);
     } else {
             log::info!("  bmp38x sensor data not ready!");
