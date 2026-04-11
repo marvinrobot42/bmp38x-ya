@@ -43,6 +43,7 @@ can be accurate compensated (as it requires current temperature).  This is a BMP
   - 0.1.0  Initial release
   - 0.1.1  Fixed docs link
   - 0.1.2  Updated docs
+  - 0.1.3  Fixed issue with embassy async I2C
 
 
 ## Usage

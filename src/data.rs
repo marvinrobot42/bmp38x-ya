@@ -23,7 +23,7 @@ pub struct Measurements {
     pub air_pressure_sealevel_pa: f64,
 }
 
-/// Si7021 device id
+/// BMP38x device id
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct DeviceInfo {
     /// device ID
